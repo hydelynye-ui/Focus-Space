@@ -62,12 +62,16 @@ let layoutDraft = null;
 function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem('focus-space-state-v1') || '{}');
-    return {
+    const migratedTimerStyle = raw.timerStyle === 'hourglass';
+    const next = {
       ...defaultState, ...raw,
+      timerStyle: migratedTimerStyle ? 'circular' : (raw.timerStyle || defaultState.timerStyle),
       layoutOrder: Array.isArray(raw.layoutOrder) ? raw.layoutOrder : DEFAULT_LAYOUT,
       layoutHidden: Array.isArray(raw.layoutHidden) ? raw.layoutHidden : [],
       timer: { ...defaultState.timer, ...(raw.timer || {}) }
     };
+    if (migratedTimerStyle) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    return next;
   } catch {
     return structuredClone(defaultState);
   }
@@ -104,22 +108,22 @@ function timerProgress() { return Math.min(1, currentElapsed() / Math.max(1, sta
 
 function renderTimerVisual() {
   const stage = $('#timerStage');
-  if (!stage) return;
+  const visualArea = $('#timerVisualArea');
+  if (!stage || !visualArea) return;
   const style = state.timerStyle;
   const templates = {
-    minimal: `<div class="timer-shell minimal-shell"><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div>`,
-    circular: `<div class="timer-shell circular-shell"><div class="inner-orbit"></div><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div>`,
-    flip: `<div class="timer-shell flip-shell"><div class="flip-panel" id="flipMinutes">25</div><div class="flip-colon">:</div><div class="flip-panel" id="flipSeconds">00</div><div class="timer-caption" id="timerCaption"></div></div>`,
-    analog: `<div class="timer-shell analog-shell"><div class="analog-face"></div><div class="analog-hand" id="analogHand"></div><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div>`,
-    hourglass: `<div class="timer-shell"><div class="hourglass-shell"><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div></div>`,
-    radial: `<div class="timer-shell radial-shell"><div class="radial-progress"></div><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div>`,
-    glass: `<div class="timer-shell glass-shell"><div class="timer-readout" id="timerReadout"></div><div class="timer-caption" id="timerCaption"></div></div>`
+    minimal: `<div class="timer-shell minimal-shell"><div class="timer-readout" id="timerReadout"></div></div>`,
+    circular: `<div class="timer-shell circular-shell"><div class="inner-orbit"></div><div class="timer-readout" id="timerReadout"></div></div>`,
+    flip: `<div class="timer-shell flip-shell"><div class="flip-panel" id="flipMinutes">25</div><div class="flip-colon">:</div><div class="flip-panel" id="flipSeconds">00</div></div>`,
+    analog: `<div class="timer-shell analog-shell"><div class="analog-face"></div><div class="analog-hand" id="analogHand"></div><div class="timer-readout" id="timerReadout"></div></div>`,
+    radial: `<div class="timer-shell radial-shell"><div class="radial-progress"></div><div class="timer-readout" id="timerReadout"></div></div>`,
+    glass: `<div class="timer-shell glass-shell"><div class="timer-readout" id="timerReadout"></div></div>`
   };
   stage.dataset.style = style;
-  stage.innerHTML = templates[style] || templates.circular;
+  visualArea.innerHTML = templates[style] || templates.circular;
 }
 function renderTimer() {
-  if (!$('#timerReadout')) renderTimerVisual();
+  if (!$('#timerVisualArea')?.firstElementChild) renderTimerVisual();
   const timer = state.timer;
   const elapsed = currentElapsed();
   const remaining = Math.max(0, timer.duration - elapsed);
@@ -140,7 +144,7 @@ function renderTimer() {
   $('#timerStage')?.style.setProperty('--pct', timerProgress());
   $('#analogHand')?.style.setProperty('--hand-angle', `${Math.round(timerProgress() * 360)}deg`);
   const caption = timer.phase === 'running' ? (state.encouragement ? 'Stay with this one thing.' : '') : timer.phase === 'paused' ? 'Paused. Come back when you are ready.' : 'A quiet start is still a start.';
-  if ($('#timerCaption')) $('#timerCaption').textContent = caption;
+  if ($('#timerCaption')) $('#timerCaption').textContent = caption || 'A quiet start is still a start.';
   if ($('#overlayCaption')) $('#overlayCaption').textContent = caption;
 }
 function timerLoop() {
