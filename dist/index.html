@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#eff1eb" />
+  <meta name="description" content="Focus Space — a calm, focus-centered digital workspace." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%232d5047'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%23f6f3ea' stroke-width='5'/%3E%3Cpath d='M32 20v12l8 7' stroke='%23f6f3ea' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>Focus Space</title>
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="brand-lockup"><div class="brand-mark">F</div><div><div class="brand-name">Focus Space</div><div class="brand-sub">personal focus workspace</div></div></div>
+      <div class="top-actions">
+        <div class="sync-pill" id="syncPill"><span class="sync-dot"></span><span id="syncText">Synced locally</span></div>
+        <button class="icon-button" id="themeToggle" aria-label="Toggle theme">☼</button>
+        <button class="icon-button" id="fullscreenButton" aria-label="Enter focus mode">↗</button>
+        <button class="profile-button" id="profileButton"><span class="avatar">AS</span><span class="profile-label">Avery Stone</span><span class="chevron">⌄</span></button>
+      </div>
+    </header>
+
+    <div class="workspace-wrap">
+      <aside class="sidebar">
+        <div class="sidebar-label">Workspace</div>
+        <nav>
+          <button class="nav-item active" data-view="workspace"><span class="nav-icon">⌂</span><span>Workspace</span></button>
+          <button class="nav-item" data-view="journey"><span class="nav-icon">◔</span><span>Focus Journey</span></button>
+          <button class="nav-item" data-view="scenes"><span class="nav-icon">◌</span><span>Scenes</span></button>
+        </nav>
+        <div class="sidebar-label second">Personal</div>
+        <nav>
+          <button class="nav-item" data-view="tasks"><span class="nav-icon">✓</span><span>Tasks</span><span class="nav-count" id="taskCount">3</span></button>
+          <button class="nav-item" data-view="notes"><span class="nav-icon">▤</span><span>Notes</span></button>
+          <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+        </nav>
+        <div class="sidebar-footer"><div class="mini-profile"><span class="avatar small">AS</span><div><strong>Avery Stone</strong><span>Free space</span></div></div><button class="logout-button">↪</button></div>
+      </aside>
+
+      <main class="main-content">
+        <section class="view active" id="workspaceView">
+          <div class="page-heading"><div><p class="eyebrow">THURSDAY, NOVEMBER 7, 2026</p><h1>Good morning, Avery<span class="title-dot">.</span></h1><p class="heading-copy">Make room for the work that matters today.</p></div><div class="heading-actions"><button class="ghost-button" id="ritualButton">◌ <span>Start ritual</span></button><button class="primary-button" id="editLayoutButton">Edit layout <span>⌘K</span></button></div></div>
+          <div class="workspace-grid" id="workspaceGrid">
+            <article class="surface timer-card" id="timerCard">
+              <div class="card-topline"><div class="status-label"><span class="status-dot"></span><span id="timerStatus">Ready to focus</span></div><button class="more-button" aria-label="Timer options">•••</button></div>
+              <div class="timer-heading"><div><p class="eyebrow">CURRENT SESSION</p><h2 id="timerModeLabel">Deep work</h2></div><div class="timer-controls"><button class="seg-button active" data-mode="focus">Focus</button><button class="seg-button" data-mode="short">Short break</button><button class="seg-button" data-mode="long">Long break</button></div></div>
+              <div class="timer-stage" id="timerStage" data-style="minimal">
+                <div class="timer-orbit"><div class="orbit-ring"></div><div class="orbit-ring inner"></div><div class="timer-readout" id="timerReadout">25:00</div><div class="timer-caption" id="timerCaption">A quiet start is still a start.</div></div>
+              </div>
+              <div class="timer-bottom"><div class="preset-picker"><span class="picker-label">PRESET</span><select id="presetSelect"><option value="25">25 / 5</option><option value="50">50 / 10</option><option value="60">60 / 15</option><option value="custom">Custom</option></select></div><div class="timer-actions"><button class="secondary-button" id="resetButton">Reset</button><button class="primary-button start-button" id="startButton"><span id="startIcon">▶</span><span id="startLabel">Start focus</span></button></div><div class="style-picker"><span class="picker-label">STYLE</span><select id="styleSelect"><option value="minimal">Minimal digital</option><option value="flip">Flip clock</option><option value="circular">Circular timer</option><option value="analog">Analog timer</option><option value="hourglass">Hourglass</option><option value="radial">Radial timer</option><option value="glass">Glass timer</option></select></div></div>
+            </article>
+
+            <article class="surface tasks-card"><div class="card-header"><div><p class="eyebrow">TODAY</p><h3>Tasks</h3></div><button class="small-action" id="addTaskButton">＋</button></div><div class="task-list" id="taskList"></div><button class="inline-link" data-view-target="tasks">View all tasks <span>→</span></button></article>
+
+            <article class="surface schedule-card"><div class="card-header"><div><p class="eyebrow">THU, NOV 7</p><h3>Schedule</h3></div><button class="small-action" id="addScheduleButton">＋</button></div><div class="schedule-list" id="scheduleList"></div><button class="inline-link" data-view-target="tasks">Open calendar <span>→</span></button></article>
+
+            <article class="surface notes-card"><div class="card-header"><div><p class="eyebrow">QUICK CAPTURE</p><h3>Notes</h3></div><button class="small-action" id="openNotesButton">↗</button></div><textarea id="quickNote" placeholder="Capture a thought while it is fresh…"></textarea><div class="note-footer"><span id="noteSaved">Autosaved just now</span><span class="note-count" id="noteCount">0 / 500</span></div></article>
+
+            <article class="surface stats-card"><div class="card-header"><div><p class="eyebrow">THIS WEEK</p><h3>Focus rhythm</h3></div><button class="small-action" data-view-target="journey">↗</button></div><div class="stats-row"><div><strong id="todayMinutes">0m</strong><span>today</span></div><div><strong id="weekSessions">0</strong><span>sessions</span></div><div><strong id="streakDays">1</strong><span>day rhythm</span></div></div><div class="bars" id="weeklyBars"></div><div class="bar-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div></article>
+
+            <article class="surface clock-card"><div class="clock-face"><div class="clock-time" id="clockTime">09:41</div><div class="clock-meta" id="clockMeta">THU · NOV 7</div></div><div class="clock-location"><span class="location-dot"></span><span>Shanghai, CN</span><span class="clock-mode">24h</span></div></article>
+          </div>
+        </section>
+
+        <section class="view" id="journeyView"><div class="page-heading compact"><div><p class="eyebrow">YOUR HISTORY</p><h1>Focus Journey<span class="title-dot">.</span></h1><p class="heading-copy">See your attention take shape over time.</p></div></div><div class="journey-hero surface"><div><p class="eyebrow">TOTAL FOCUS TIME</p><strong id="journeyTotal">0h 0m</strong><p>Every session counts, including the quiet ones.</p></div><div class="journey-chip">◔ <span id="journeyCount">0 sessions</span></div></div><div class="journey-grid"><article class="surface chart-card"><div class="card-header"><div><p class="eyebrow">LAST 7 DAYS</p><h3>Weekly rhythm</h3></div><span class="chart-legend"><i></i> focused minutes</span></div><div class="large-bars" id="largeBars"></div></article><article class="surface sessions-card"><div class="card-header"><div><p class="eyebrow">RECENT SESSIONS</p><h3>Reflection shelf</h3></div></div><div id="sessionHistory" class="session-history"><div class="empty-state">Complete a focus session to see your reflections here.</div></div></article></div></section>
+
+        <section class="view" id="scenesView"><div class="page-heading compact"><div><p class="eyebrow">SET THE ATMOSPHERE</p><h1>Workspace scenes<span class="title-dot">.</span></h1><p class="heading-copy">A place that feels good to return to.</p></div><button class="primary-button" id="saveSceneButton">＋ Save custom scene</button></div><div class="scene-grid" id="sceneGrid"></div></section>
+
+        <section class="view" id="tasksView"><div class="page-heading compact"><div><p class="eyebrow">PERSONAL SYSTEM</p><h1>Tasks & schedule<span class="title-dot">.</span></h1><p class="heading-copy">Keep the next thing visible, never overwhelming.</p></div><div class="heading-actions"><button class="ghost-button" id="viewTasksOnly">Tasks</button><button class="primary-button" id="viewScheduleOnly">＋ Add schedule</button></div></div><div class="task-page-grid"><article class="surface full-list-card"><div class="card-header"><div><p class="eyebrow">TODAY'S FOCUS</p><h3>Tasks</h3></div><button class="small-action" id="addTaskButtonPage">＋</button></div><div class="task-list full" id="taskListPage"></div></article><article class="surface full-list-card"><div class="card-header"><div><p class="eyebrow">YOUR DAY</p><h3>Schedule</h3></div><button class="small-action" id="addScheduleButtonPage">＋</button></div><div class="schedule-list full" id="scheduleListPage"></div></article></div></section>
+
+        <section class="view" id="notesView"><div class="page-heading compact"><div><p class="eyebrow">A PLACE TO THINK</p><h1>Notes<span class="title-dot">.</span></h1><p class="heading-copy">Small captures become a useful trail.</p></div><button class="primary-button" id="newNoteButton">＋ New note</button></div><div class="notes-page surface"><textarea id="fullNote" placeholder="Start writing…"></textarea><div class="note-footer"><span id="fullNoteSaved">Autosaved just now</span><span id="fullNoteCount">0 / 5000</span></div></div></section>
+
+        <section class="view" id="settingsView"><div class="page-heading compact"><div><p class="eyebrow">YOUR SPACE</p><h1>Settings<span class="title-dot">.</span></h1><p class="heading-copy">Make the workspace feel like yours.</p></div></div><div class="settings-grid"><article class="surface setting-card"><div><p class="eyebrow">ACCOUNT</p><h3>Avery Stone</h3><p class="muted">avery@focus.space</p></div><span class="status-badge">Local profile</span></article><article class="surface setting-card"><div><p class="eyebrow">SYNC</p><h3>Offline-first storage</h3><p class="muted">Your changes are safely saved in this browser.</p></div><span class="status-badge green">Ready</span></article><article class="surface setting-card"><div><p class="eyebrow">TIMER</p><h3>Encouragement</h3><p class="muted">Gentle reminders without pressure.</p></div><label class="switch"><input type="checkbox" id="encouragementToggle" checked><span></span></label></article><article class="surface setting-card"><div><p class="eyebrow">MOTION</p><h3>Reduce motion</h3><p class="muted">Use fewer transitions and effects.</p></div><label class="switch"><input type="checkbox" id="motionToggle"><span></span></label></article></div></section>
+      </main>
+    </div>
+    <nav class="mobile-nav"><button class="active" data-view="workspace"><span>⌂</span>Home</button><button data-view="journey"><span>◔</span>Journey</button><button data-view="scenes"><span>◌</span>Scenes</button><button data-view="settings"><span>⚙</span>Settings</button></nav>
+  </div>
+
+  <div class="focus-overlay" id="focusOverlay" aria-hidden="true"><div class="overlay-backdrop"></div><div class="overlay-content"><div class="overlay-top"><div class="brand-lockup"><div class="brand-mark">F</div><div><div class="brand-name">Focus Space</div><div class="brand-sub">deep work mode</div></div></div><button class="icon-button light" id="exitFullscreen">×</button></div><div class="overlay-center"><p class="eyebrow">DEEP WORK</p><div class="overlay-timer" id="overlayTimer">25:00</div><div class="overlay-caption" id="overlayCaption">A quiet start is still a start.</div><div class="overlay-actions"><button class="ghost-button light" id="overlayReset">Reset</button><button class="primary-button" id="overlayStart">▶ Start focus</button><button class="ghost-button light" id="overlayStop">Stop</button></div></div><div class="overlay-bottom"><span id="overlayScene">Warm Study</span><span class="overlay-breath">◌ Breathe in. Settle in. Begin.</span><span>Esc to exit</span></div></div></div>
+
+  <div class="modal" id="modal" aria-hidden="true"><div class="modal-backdrop" data-close-modal></div><div class="modal-card" id="modalCard"></div></div>
+  <div class="toast" id="toast"><span class="toast-icon">✓</span><span id="toastText">Saved</span></div>
+  <script src="/app.js"></script>
+</body>
+</html>

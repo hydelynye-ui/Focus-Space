@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1200" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#f2e7d6"/><stop offset=".58" stop-color="#c9a98b"/><stop offset="1" stop-color="#6e4b3b"/></linearGradient>
+ <radialGradient id="sun"><stop stop-color="#fffbe9" stop-opacity=".9"/><stop offset="1" stop-color="#fffbe9" stop-opacity="0"/></radialGradient>
+ <linearGradient id="wood"><stop stop-color="#9b6545"/><stop offset=".5" stop-color="#d2a77d"/><stop offset="1" stop-color="#7e4c35"/></linearGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="32"/></filter>
+</defs>
+<rect width="1920" height="1200" fill="url(#bg)"/>
+<circle cx="430" cy="230" r="500" fill="url(#sun)" filter="url(#blur)"/>
+<rect x="0" y="0" width="1920" height="710" fill="#faf3e6" opacity=".5"/>
+<path d="M0 620 Q340 530 690 650 T1360 600 T1920 590 V0 H0Z" fill="#efe1ce" opacity=".85"/>
+<path d="M1380 0h540v560h-540z" fill="#d7bca0" opacity=".55"/>
+<path d="M1510 0v560M1695 0v560" stroke="#b89576" stroke-width="18" opacity=".4"/>
+<rect y="760" width="1920" height="440" fill="url(#wood)"/>
+<path d="M0 850q420-100 790 5t1130-15" fill="none" stroke="#edc69e" stroke-width="15" opacity=".35"/>
+<path d="M200 890h440l-30 180H235z" fill="#f6f0e6" opacity=".72"/>
+<path d="M300 880h290v20H300z" fill="#87634e"/>
+<path d="M465 880v-180" stroke="#87634e" stroke-width="18"/>
+<circle cx="470" cy="655" r="78" fill="#8caa84" opacity=".75"/><path d="M465 680q-70-170-125-188M478 665q76-150 130-180" stroke="#7f966f" stroke-width="20"/>
+<path d="M1100 915h450v190h-450z" fill="#75513f"/><rect x="1160" y="790" width="340" height="220" rx="14" fill="#353039" opacity=".82"/><path d="M1185 815h290v160h-290z" fill="#c5d1cd" opacity=".3"/>
+<circle cx="930" cy="960" r="70" fill="#d9b77d"/><circle cx="930" cy="960" r="58" fill="#fbf4e9" opacity=".45"/>
+</svg>
