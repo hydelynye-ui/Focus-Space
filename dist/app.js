@@ -19,6 +19,40 @@ const defaultState = {
   tasks: [], schedule: [], notes: '', fullNote: '', sessions: [],
   timer: { mode: 'focus', phase: 'idle', duration: 1500, startedAt: null, elapsedBeforeStart: 0, sessionId: null }
 };
+const LOCAL_DB_NAME = 'focus-space-local-v1';
+const LOCAL_STORE = 'workspace';
+let localDbPromise;
+function openLocalDb() {
+  if (!('indexedDB' in window)) return Promise.resolve(null);
+  if (!localDbPromise) localDbPromise = new Promise(resolve => {
+    const request = indexedDB.open(LOCAL_DB_NAME, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(LOCAL_STORE);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+  });
+  return localDbPromise;
+}
+async function readIndexedState() {
+  try {
+    const db = await openLocalDb(); if (!db) return null;
+    return await new Promise(resolve => { const tx = db.transaction(LOCAL_STORE, 'readonly'); const request = tx.objectStore(LOCAL_STORE).get('current'); request.onsuccess = () => resolve(request.result || null); request.onerror = () => resolve(null); });
+  } catch { return null; }
+}
+async function writeIndexedState(value) {
+  try {
+    const db = await openLocalDb(); if (!db) return;
+    await new Promise(resolve => { const tx = db.transaction(LOCAL_STORE, 'readwrite'); tx.objectStore(LOCAL_STORE).put(value, 'current'); tx.oncomplete = () => resolve(); tx.onerror = () => resolve(); });
+  } catch { /* localStorage remains the fallback */ }
+}
+async function hydrateIndexedState() {
+  const indexed = await readIndexedState();
+  if (indexed) {
+    state = { ...state, ...indexed, timer: { ...defaultState.timer, ...(indexed.timer || {}) } };
+    renderAll();
+  } else {
+    writeIndexedState(state);
+  }
+}
 let state = loadState();
 let tickHandle = null;
 let toastTimer = null;
@@ -40,6 +74,7 @@ function loadState() {
 }
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  writeIndexedState(state);
   updateSync(navigator.onLine ? 'Local saved' : 'Offline · local saved', navigator.onLine ? 'local' : 'offline');
 }
 function updateSync(label, mode = 'local') {

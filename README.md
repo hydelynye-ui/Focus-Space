@@ -8,7 +8,7 @@ Focus Space is a calm, focus-centered workspace with an absolute-timestamp timer
 python3 -m http.server 4173 --directory dist
 ```
 
-The current static slice persists workspace state locally and never labels local persistence as cloud sync. The repository also includes the CloudBase SQL migration scaffold and environment template for the next backend phase.
+The current static slice persists workspace state in IndexedDB with a localStorage fallback and never labels local persistence as cloud sync. The repository also includes the CloudBase SQL migration scaffold and environment template for the next backend phase.
 
 ## Build / deploy
 
