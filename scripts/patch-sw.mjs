@@ -1,0 +1,6 @@
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+const assetFiles = (await readdir('dist/assets')).filter(file => /\.(?:js|css|svg|png|jpg|jpeg|webp|woff2?)$/i.test(file));
+const core = ['/', '/index.html', '/manifest.webmanifest', ...assetFiles.map(file => `/assets/${file}`)];
+const sw = `const CACHE = 'focus-space-v3';\nconst CORE = ${JSON.stringify(core)};\nself.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));\nself.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));\nself.addEventListener('fetch', event => { if (event.request.method !== 'GET') return; event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); return response; }).catch(() => caches.match('/index.html')))); });\n`;
+await writeFile('dist/sw.js', sw);
+console.log(`service worker patched with ${assetFiles.length} build assets`);

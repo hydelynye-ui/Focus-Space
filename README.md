@@ -1,15 +1,31 @@
 # Focus Space
 
-Focus Space is a calm, focus-centered workspace with an absolute-timestamp timer, independent timer and clock renderers, scene switching, tasks, schedule, notes, journey history, layout editing, and a PWA shell.
+Focus Space is a focus-centered workspace with an absolute-timestamp timer, independent timer and clock renderers, scene switching, tasks, schedule, notes, journey history, layout editing, and a PWA shell.
 
-## Run locally
+## Production build
+
+The current checkout is a Vite static build around the existing browser application. It does not contain a React/TypeScript source tree or a CloudBase SDK client yet; the deployment preparation scripts deliberately report that fact instead of treating the static app as a React build.
 
 ```bash
-python3 -m http.server 4173 --directory dist
+npm ci
+npm run build
+npm run check:deploy
+npm run typecheck
+npm run lint
 ```
 
-The current static slice persists workspace state in IndexedDB with a localStorage fallback and never labels local persistence as cloud sync. The repository also includes the CloudBase SQL migration scaffold and environment template for the next backend phase.
+The build uses `vite.config.js` with `base: '/'` and writes the production site to `dist/`. Node.js `>=22.12.0` is declared in `package.json`.
 
-## Build / deploy
+## CloudBase
 
-The published Site is a static build from `dist/`. For CloudBase hosting, use Node.js 22, `npm ci`, `npm run build`, and deploy `dist/`. Configure `VITE_CLOUDBASE_ENV_ID` and `VITE_CLOUDBASE_PUBLISHABLE_KEY` through the hosting environment; do not commit `.env` or server secrets.
+`.env.example` is pinned to the independent Focus Space environment:
+
+- `VITE_CLOUDBASE_ENV_ID=focus-space-d5gmg1bimc422765f`
+- `VITE_CLOUDBASE_REGION=ap-shanghai`
+- `VITE_CLOUDBASE_PUBLISHABLE_KEY=`
+
+Only the publishable client key may be used in browser code. `.env` and `.env.local` are ignored. No FOMS endpoint or secret key is present in this checkout. The CloudBase client module is a safe configuration scaffold; the actual CloudBase JS SDK/auth/sync adapter still needs to be wired before production data sync can be claimed.
+
+## Local data safety
+
+The app persists workspace state in IndexedDB with a localStorage fallback. The build only regenerates static files and does not access or clear browser storage, scene assets, or user settings.
