@@ -11,9 +11,13 @@
     "check:deploy": "node scripts/check-deploy.mjs",
     "typecheck": "node scripts/typecheck.mjs",
     "lint": "node scripts/lint.mjs",
-    "check:lock": "node scripts/check-lock.mjs"
+    "check:lock": "node scripts/check-lock.mjs",
+    "check:auth": "node scripts/check-auth.mjs"
   },
   "devDependencies": {
     "vite": "6.3.5"
+  },
+  "dependencies": {
+    "@cloudbase/js-sdk": "3.11.0"
   }
 }

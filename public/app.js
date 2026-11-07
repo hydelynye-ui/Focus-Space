@@ -1,3 +1,16 @@
+import {
+  getAuthStatus,
+  getCurrentSession,
+  getCurrentUser,
+  initializeAuth,
+  onAuthStateChange,
+  sendEmailOtp,
+  signInWithEmail,
+  signOut,
+  signUpWithEmail,
+  verifyEmailOtp,
+  verifyRegistrationCode
+} from '../src/cloudbase/auth.js';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const STORAGE_KEY = 'focus-space-state-v2';
@@ -60,6 +73,50 @@ let tickHandle = null;
 let toastTimer = null;
 let editingLayout = false;
 let layoutDraft = null;
+
+let authState = { user: null, configured: false, error: null };
+let authCooldownTimer;
+let registerCodeRequested = false;
+let loginCodeRequested = false;
+function authUserLabel(user) { return user?.displayName || user?.name || user?.email || 'CloudBase account'; }
+function authInitials(user) { return authUserLabel(user).split(/[^A-Za-z0-9一-鿿]+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'AC'; }
+function updateAccountUI(user) {
+  authState.user = user || null;
+  const guest = !user;
+  const label = guest ? 'Guest workspace' : authUserLabel(user);
+  const meta = guest ? 'Local profile' : (user.email || 'CloudBase account');
+  const initials = guest ? 'GW' : authInitials(user);
+  [['#profileAvatar', initials], ['#sidebarAvatar', initials]].forEach(([selector, value]) => { if ($(selector)) $(selector).textContent = value; });
+  [['#profileLabel', label], ['#sidebarProfileName', label], ['#sidebarProfileMeta', meta], ['#settingsAccountName', label], ['#settingsAccountMeta', meta]].forEach(([selector, value]) => { if ($(selector)) $(selector).textContent = value; });
+  if ($('#settingsAccountStatus')) $('#settingsAccountStatus').textContent = guest ? 'Local profile' : 'Account connected';
+  if ($('#settingsAccountStatus')) $('#settingsAccountStatus').classList.toggle('green', Boolean(user));
+}
+function setAuthNotice(message, tone = 'info') { const node = $('#authNotice'); if (node) { node.textContent = message; node.dataset.tone = tone; node.hidden = !message; } }
+function authBusy(button, busy, label) { if (!button) return; button.disabled = busy; if (busy) { button.dataset.label = button.textContent; button.textContent = label || 'Working…'; } else if (button.dataset.label) { button.textContent = button.dataset.label; } }
+function validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+function startCodeCooldown(button, seconds = 45) {
+  clearInterval(authCooldownTimer); let left = seconds; button.disabled = true; button.textContent = `Resend in ${left}s`;
+  authCooldownTimer = setInterval(() => { left -= 1; if (left <= 0) { clearInterval(authCooldownTimer); button.disabled = false; button.textContent = 'Send code'; } else button.textContent = `Resend in ${left}s`; }, 1000);
+}
+function authTabsMarkup(active) { return `<div class="auth-tabs"><button class="auth-tab ${active === 'password' ? 'active' : ''}" data-auth-tab="password">Password</button><button class="auth-tab ${active === 'otp' ? 'active' : ''}" data-auth-tab="otp">Email code</button><button class="auth-tab ${active === 'register' ? 'active' : ''}" data-auth-tab="register">Create account</button></div>`; }
+function authPanelMarkup(active) {
+  const password = `<div class="auth-panel" data-auth-panel="password" ${active === 'password' ? '' : 'hidden'}><div class="modal-form"><label>Email<input id="authLoginEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label>Password<input id="authLoginPassword" type="password" autocomplete="current-password" placeholder="Your password"></label></div><div class="modal-actions"><button class="primary-button" id="authPasswordLogin">Sign in</button></div></div>`;
+  const otp = `<div class="auth-panel" data-auth-panel="otp" ${active === 'otp' ? '' : 'hidden'}><div class="modal-form"><label>Email<input id="authOtpEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label>Verification code<div class="auth-code-row"><input id="authOtpCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code"><button class="secondary-button" id="authSendLoginOtp">Send code</button></div></label></div><div class="modal-actions"><button class="primary-button" id="authVerifyLoginOtp">Verify and sign in</button></div></div>`;
+  const register = `<div class="auth-panel" data-auth-panel="register" ${active === 'register' ? '' : 'hidden'}><div class="modal-form"><label>Email<input id="authRegisterEmail" type="email" autocomplete="email" placeholder="you@example.com"></label><label>Password<input id="authRegisterPassword" type="password" autocomplete="new-password" placeholder="Choose a password"></label><label>Confirm password<input id="authRegisterConfirm" type="password" autocomplete="new-password" placeholder="Repeat your password"></label><label>Verification code<div class="auth-code-row"><input id="authRegisterCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code"><button class="secondary-button" id="authSendRegisterOtp">Send code</button></div></label></div><div class="modal-actions"><button class="primary-button" id="authCompleteRegister">Create account</button></div></div>`;
+  return password + otp + register;
+}
+function wireAuthModal(active) {
+  $$('.auth-tab').forEach(tab => tab.addEventListener('click', () => { $$('.auth-tab').forEach(item => item.classList.toggle('active', item === tab)); $$('.auth-panel').forEach(panel => { panel.hidden = panel.dataset.authPanel !== tab.dataset.authTab; }); setAuthNotice(''); }));
+  $('#authPasswordLogin')?.addEventListener('click', async () => { const email = $('#authLoginEmail').value.trim(); const password = $('#authLoginPassword').value; if (!validateEmail(email)) return setAuthNotice('Enter a valid email address.', 'error'); if (!password) return setAuthNotice('Enter your password.', 'error'); const button = $('#authPasswordLogin'); authBusy(button, true, 'Signing in…'); try { await signInWithEmail(email, password); await completeAuthConnection(); } catch (error) { setAuthNotice(error.message, 'error'); } finally { authBusy(button, false); } });
+  $('#authSendLoginOtp')?.addEventListener('click', async () => { const email = $('#authOtpEmail').value.trim(); if (!validateEmail(email)) return setAuthNotice('Enter a valid email address.', 'error'); const button = $('#authSendLoginOtp'); authBusy(button, true, 'Sending…'); try { await sendEmailOtp(email); loginCodeRequested = true; setAuthNotice('Code sent. Check your email, then enter it here.'); startCodeCooldown(button); } catch (error) { setAuthNotice(error.message, 'error'); } finally { if (button.disabled && !loginCodeRequested) authBusy(button, false); } });
+  $('#authVerifyLoginOtp')?.addEventListener('click', async () => { if (!loginCodeRequested) return setAuthNotice('Send a sign-in code first.', 'error'); const code = $('#authOtpCode').value.trim(); if (!code) return setAuthNotice('Enter the verification code.', 'error'); const button = $('#authVerifyLoginOtp'); authBusy(button, true, 'Verifying…'); try { await verifyEmailOtp(code); await completeAuthConnection(); } catch (error) { setAuthNotice(error.message, 'error'); } finally { authBusy(button, false); } });
+  $('#authSendRegisterOtp')?.addEventListener('click', async () => { const email = $('#authRegisterEmail').value.trim(); const password = $('#authRegisterPassword').value; const confirm = $('#authRegisterConfirm').value; if (!validateEmail(email)) return setAuthNotice('Enter a valid email address.', 'error'); if (!password || password.length < 6) return setAuthNotice('Use a password with at least 6 characters.', 'error'); if (password !== confirm) return setAuthNotice('Passwords do not match.', 'error'); const button = $('#authSendRegisterOtp'); authBusy(button, true, 'Sending…'); try { await signUpWithEmail(email, password); registerCodeRequested = true; setAuthNotice('Code sent. Check your email, then enter it here.'); startCodeCooldown(button); } catch (error) { setAuthNotice(error.message, 'error'); authBusy(button, false); } });
+  $('#authCompleteRegister')?.addEventListener('click', async () => { if (!registerCodeRequested) return setAuthNotice('Send a registration code first.', 'error'); const code = $('#authRegisterCode').value.trim(); if (!code) return setAuthNotice('Enter the verification code.', 'error'); const button = $('#authCompleteRegister'); authBusy(button, true, 'Creating…'); try { await verifyRegistrationCode(code); await completeAuthConnection(); } catch (error) { setAuthNotice(error.message, 'error'); } finally { authBusy(button, false); } });
+}
+function openAuthModal(tab = 'password') { const status = getAuthStatus(); registerCodeRequested = false; loginCodeRequested = false; openModal(`<p class="eyebrow">ACCOUNT</p><h3>Connect your workspace</h3><p class="auth-description">Your Guest workspace stays local. Connecting an account does not upload or delete your existing data.</p>${!status.configured ? '<div class="auth-config-warning">CloudBase Publishable Key is not configured. Guest workspace is still available.</div>' : ''}<div id="authNotice" class="auth-notice" hidden></div>${authTabsMarkup(tab)}${authPanelMarkup(tab)}`); wireAuthModal(tab); }
+function openAccountModal() { const user = authState.user; openModal(`<p class="eyebrow">ACCOUNT</p><h3>${escapeHtml(authUserLabel(user))}</h3><p class="auth-description">${escapeHtml(user?.email || 'CloudBase account')}</p><div class="auth-account-note">Account connected. Your workspace is still stored locally. Cloud sync will be enabled in the next stage.</div><div class="modal-actions"><button class="secondary-button" data-close-modal>Close</button><button class="primary-button" id="authSignOut">Sign out</button></div>`); $('#authSignOut').addEventListener('click', async () => { const button = $('#authSignOut'); authBusy(button, true, 'Signing out…'); try { await signOut(); updateAccountUI(null); closeModal(); showToast('Signed out. Local workspace preserved.'); } catch (error) { showToast(error.message); authBusy(button, false); } }); }
+async function completeAuthConnection() { const user = await getCurrentUser(); updateAccountUI(user); closeModal(); showToast('Account connected. Local workspace preserved.'); }
+async function initializeAuthFlow() { const status = initializeAuth(); authState.configured = status.configured; authState.error = status.error; if (!status.configured) return; try { const session = await getCurrentSession(); if (session?.user) updateAccountUI(session.user); else updateAccountUI(null); const subscription = onAuthStateChange(async ({ session: nextSession }) => { if (nextSession?.user) updateAccountUI(nextSession.user); else updateAccountUI(null); }); window.__focusSpaceAuthSubscription = subscription; } catch (error) { authState.error = error; updateAccountUI(null); } }
 
 function loadState() {
   try {
@@ -328,6 +385,7 @@ function bind() {
   });
   $('#startButton').addEventListener('click', startPause); $('#overlayStart').addEventListener('click', startPause); $('#resetButton').addEventListener('click', () => resetTimer()); $('#overlayReset').addEventListener('click', () => resetTimer()); $('#overlayStop').addEventListener('click', stopTimer); $('#fullscreenButton').addEventListener('click', toggleFullscreen); $('#exitFullscreen').addEventListener('click', toggleFullscreen);
   $('#themeToggle').addEventListener('click', () => { state.theme = state.theme === 'light' ? 'dark' : 'light'; document.body.classList.toggle('dark', state.theme === 'dark'); saveState(); });
+  $('#profileButton').addEventListener('click', () => authState.user ? openAccountModal() : openAuthModal('password')); $('#logoutButton').addEventListener('click', async () => { if (!authState.user) return openAuthModal('password'); try { await signOut(); updateAccountUI(null); showToast('Signed out. Local workspace preserved.'); } catch (error) { showToast(error.message); } });
   $('#ritualButton').addEventListener('click', openRitual); $('#scenesButton').addEventListener('click', () => toggleScenes()); $('#closeScenes').addEventListener('click', () => toggleScenes(false)); $('#sceneSearch').addEventListener('input', event => renderScenes(event.target.value));
   $('#addTaskButton').addEventListener('click', openAddTask); $('#addTaskButtonPage').addEventListener('click', openAddTask); $('#addScheduleButton').addEventListener('click', openAddSchedule); $('#addScheduleButtonPage').addEventListener('click', openAddSchedule); $('#openNotesButton').addEventListener('click', () => navigate('notes')); $('#newNoteButton').addEventListener('click', () => $('#fullNote').focus());
   $('#presetSelect').addEventListener('change', event => setPreset(event.target.value)); $('#styleSelect').addEventListener('change', event => { state.timerStyle = event.target.value; saveState(); renderTimerVisual(); renderTimer(); showToast('Timer style changed'); }); $('#clockStyleSelect').addEventListener('change', event => { state.clockStyle = event.target.value; saveState(); renderClockVisual(); showToast('Clock style changed'); }); $$('.seg-button').forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
