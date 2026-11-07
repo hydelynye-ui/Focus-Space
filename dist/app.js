@@ -47,7 +47,9 @@ async function writeIndexedState(value) {
 async function hydrateIndexedState() {
   const indexed = await readIndexedState();
   if (indexed) {
-    state = { ...state, ...indexed, timer: { ...defaultState.timer, ...(indexed.timer || {}) } };
+    const migrated = indexed.timerStyle === 'hourglass' ? { ...indexed, timerStyle: 'circular' } : indexed;
+    state = { ...state, ...migrated, timer: { ...defaultState.timer, ...(migrated.timer || {}) } };
+    if (migrated !== indexed) writeIndexedState(state);
     renderAll();
   } else {
     writeIndexedState(state);
@@ -109,21 +111,22 @@ function timerProgress() { return Math.min(1, currentElapsed() / Math.max(1, sta
 function renderTimerVisual() {
   const stage = $('#timerStage');
   const visualArea = $('#timerVisualArea');
-  if (!stage || !visualArea) return;
+  const renderer = $('#timerRenderer');
+  if (!stage || !visualArea || !renderer) return;
   const style = state.timerStyle;
   const templates = {
     minimal: `<div class="timer-shell minimal-shell"><div class="timer-readout" id="timerReadout"></div></div>`,
     circular: `<div class="timer-shell circular-shell"><div class="inner-orbit"></div><div class="timer-readout" id="timerReadout"></div></div>`,
-    flip: `<div class="timer-shell flip-shell"><div class="flip-panel" id="flipMinutes">25</div><div class="flip-colon">:</div><div class="flip-panel" id="flipSeconds">00</div></div>`,
+    flip: `<div class="timer-shell flip-shell flip-clock-group"><div class="flip-panel" id="flipMinutes">25</div><div class="flip-colon">:</div><div class="flip-panel" id="flipSeconds">00</div></div>`,
     analog: `<div class="timer-shell analog-shell"><div class="analog-face"></div><div class="analog-hand" id="analogHand"></div><div class="timer-readout" id="timerReadout"></div></div>`,
     radial: `<div class="timer-shell radial-shell"><div class="radial-progress"></div><div class="timer-readout" id="timerReadout"></div></div>`,
     glass: `<div class="timer-shell glass-shell"><div class="timer-readout" id="timerReadout"></div></div>`
   };
   stage.dataset.style = style;
-  visualArea.innerHTML = templates[style] || templates.circular;
+  renderer.innerHTML = templates[style] || templates.circular;
 }
 function renderTimer() {
-  if (!$('#timerVisualArea')?.firstElementChild) renderTimerVisual();
+  if (!$('#timerRenderer')?.firstElementChild) renderTimerVisual();
   const timer = state.timer;
   const elapsed = currentElapsed();
   const remaining = Math.max(0, timer.duration - elapsed);
@@ -144,7 +147,7 @@ function renderTimer() {
   $('#timerStage')?.style.setProperty('--pct', timerProgress());
   $('#analogHand')?.style.setProperty('--hand-angle', `${Math.round(timerProgress() * 360)}deg`);
   const caption = timer.phase === 'running' ? (state.encouragement ? 'Stay with this one thing.' : '') : timer.phase === 'paused' ? 'Paused. Come back when you are ready.' : 'A quiet start is still a start.';
-  if ($('#timerCaption')) $('#timerCaption').textContent = caption || 'A quiet start is still a start.';
+  if ($('#timerCaption')) $('#timerCaption').textContent = 'A quiet start is still a start.';
   if ($('#overlayCaption')) $('#overlayCaption').textContent = caption;
 }
 function timerLoop() {
